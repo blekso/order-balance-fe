@@ -115,26 +115,11 @@ function App() {
   };
 
   const getOrderHistory = async () => {
-    const result = await axios.get(
-      import.meta.env.VITE_CONTRACT_ADDR as string
-    );
+    const result = await axios.get(`${import.meta.env.VITE_BACKEND_URL}/order`);
+
     if (result.status === 200) {
       const data = result.data as [any];
-      const orders = data.reverse().map((item) => {
-        return {
-          _id: item._id,
-          created: item.created,
-          status: item.status,
-          completed: item.completed,
-          order: {
-            price: item.price,
-            quantity: item.quantity,
-            total: item.total,
-            type: item.type,
-            symbol: item.symbol,
-          },
-        } as IOrderHistory;
-      });
+      const orders = data as IOrderHistory[];
       dispatch(setOrders(orders));
     }
   };
