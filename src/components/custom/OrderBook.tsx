@@ -19,7 +19,7 @@ const OrderBook: React.FC<OrderBookProps> = ({ symbol, onPriceSelected }) => {
   const dispatch = useDispatch();
 
   useEffect(() => {
-    const socket = io("http://localhost:3000", {
+    const socket = io(import.meta.env.VITE_BACKEND_URL as string, {
       transports: ["websocket"],
     });
     const sym = symbol.symbol.toLowerCase();

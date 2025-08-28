@@ -26,6 +26,8 @@ import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import axios from "axios";
 import WalletConnect from "./components/wallet-connect/WalletConnect.js";
+import { BrowserProvider } from "ethers";
+import { orderTypes } from "./utils/orderSignature";
 
 function App() {
   const [symbolIndex, setSymbolIndex] = useState(0);
@@ -59,40 +61,62 @@ function App() {
     return () => eventSource.close();
   }, []);
 
-  const addOrder = async ({
-    type,
-    symbol,
-    price,
-    quantity,
-    total,
-    status,
-  }: IOrderAdd) => {
-    console.log("add order");
-    console.log({
-      type,
-      symbol,
-      price,
-      quantity,
-      total,
-      status,
+  const addOrder = async (order: IOrderAdd) => {
+    if (!window.ethereum) {
+      toast.error("Connect MetaMask first");
+      return;
+    }
+
+    const provider = new BrowserProvider(window.ethereum);
+    const signer = await provider.getSigner();
+    const maker = await signer.getAddress();
+
+    const domain = {
+      name: "OrderBalance",
+      version: "1",
+      chainId: Number(import.meta.env.VITE_CHAIN_ID),
+      verifyingContract: import.meta.env.VITE_CONTRACT_ADDR as string,
+    };
+
+    const message = {
+      maker,
+      symbol: order.symbol.toLowerCase(),
+      price: BigInt(Math.floor(order.price * 1e8)),
+      quantity: BigInt(Math.floor(order.quantity * 1e8)),
+      total: BigInt(Math.floor(order.total * 1e8)),
+      orderType: order.type,
+      status: order.status,
+      nonce: BigInt(Date.now()),
+      expiry: BigInt(Math.floor(Date.now() / 1000) + 3600),
+    };
+
+    const signature = await signer.signTypedData(domain, orderTypes, message);
+
+    await axios.post(`${import.meta.env.VITE_BACKEND_URL}/order`, {
+      ...{
+        ...message,
+        price: message.price.toString(),
+        quantity: message.quantity.toString(),
+        total: message.total.toString(),
+        nonce: message.nonce.toString(),
+        expiry: message.expiry.toString(),
+      },
+      signature,
     });
-    await axios.post("http://localhost:3000/order", {
-      type,
-      symbol,
-      price,
-      quantity,
-      total,
-      status,
-    });
-    if (type === OrderType.BuyMarket || type === OrderType.SellMarket) {
+
+    if (
+      order.type === OrderType.BuyMarket ||
+      order.type === OrderType.SellMarket
+    ) {
       toast.success("Successfully Filled!", { position: "top-center" });
     }
+
     await getOrderHistory();
   };
 
   const getOrderHistory = async () => {
     const result = await axios.get(
-      "https://order-balance-simulation.onrender.com/order"
+      import.meta.env.VITE_CONTRACT_ADDR as string
     );
     if (result.status === 200) {
       const data = result.data as [any];
