@@ -13,28 +13,21 @@ function WalletConnect() {
     }
 
     try {
-      // Ask user to connect
       const accounts: string[] = await window.ethereum.request({
         method: "eth_requestAccounts",
       });
 
-      // Create ethers provider
       const ethersProvider = new BrowserProvider(window.ethereum);
       setProvider(ethersProvider);
-
-      // Store account
       setAccount(accounts[0]);
 
-      // Get network
       const network = await ethersProvider.getNetwork();
       setChainId(Number(network.chainId));
 
-      // Listen for account changes
       window.ethereum.on("accountsChanged", (accounts: string[]) => {
         setAccount(accounts[0] ?? null);
       });
 
-      // Listen for chain changes
       window.ethereum.on("chainChanged", () => {
         window.location.reload();
       });
@@ -44,7 +37,6 @@ function WalletConnect() {
   };
 
   useEffect(() => {
-    // Optional: auto-connect if already authorized
     if (window.ethereum && provider === null) {
       window.ethereum
         .request({ method: "eth_accounts" })
