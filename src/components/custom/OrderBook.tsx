@@ -49,7 +49,6 @@ const OrderBook: React.FC<OrderBookProps> = ({ symbol, onPriceSelected }) => {
     });
 
     socket.on("ticker_update", (msg) => {
-      // ticker is a flat object with .c field
       const price = parseFloat(msg.c);
       setCurrentPrice(price);
       dispatch(setCurrentSymbolPrice(price));
@@ -60,6 +59,7 @@ const OrderBook: React.FC<OrderBookProps> = ({ symbol, onPriceSelected }) => {
       socket.disconnect();
     };
   }, [symbol.symbol]);
+
   return (
     <div className="border-slate-500 bg-slate-900 border rounded-xl mb-4">
       <div className="w-full xl:w-auto flex-grow px-4 py-2 font-medium">
